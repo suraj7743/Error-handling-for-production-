@@ -1,5 +1,11 @@
 const express = require("express");
 const app = express();
+//this needs to be at the top of the code so it can throw an error if any synchronous errors are encountered
+process.on("uncaughtException", (err) => {
+  console.log("uncaughtException");
+  console.log(err.name, err.message);
+  process.exit(1); //exist the server  some tools are used in production for restarting the server
+});
 
 //operational error
 //  * invalid path accessed ,
@@ -23,6 +29,14 @@ app.all("*", (req, res, next) => {
     message: `Cannot find the ${req.originalUrl}on this server`,
   });
 });
-app.listen(8000, () => {
+const server = app.listen(8000, () => {
   console.log("listening to server on port 8000");
+});
+//unhandled rejection refers to the unhandled promises in async code above
+process.on("unhandledRejection", (err) => {
+  console.log("unhandledRejection shutting down");
+  console.log(err.name, err.message);
+  server.close(() => {
+    process.exit(1);
+  });
 });
